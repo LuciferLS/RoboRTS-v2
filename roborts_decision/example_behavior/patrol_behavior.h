@@ -40,15 +40,41 @@ class PatrolBehavior {
         ROS_ERROR("patrol goal is empty");
         return;
       }
+      ROS_WARN("Patrol round is %d, count is %d, size is %d",round_,patrol_count_+1,point_size_);
+      if ((patrol_count_+1)!=point_size_)
+      {
+        std::cout << "send goal" << std::endl;
+        chassis_executor_->Execute(patrol_goals_[patrol_count_]);
+        patrol_count_ = (patrol_count_+1) % point_size_;
+        executor_state = BehaviorState::RUNNING;
+      }
+      else
+      {
+        if (round_ ==1)
+        {
+          chassis_executor_->ExecuteReload(patrol_goals_[point_size_-1]);
+          executor_state = BehaviorState::RUNNING;
+          round_=0;
+          patrol_count_ = (patrol_count_+1) % point_size_;
+        }
+        else
+        {
+          round_++;
+          executor_state = BehaviorState::FAILURE;
+          patrol_count_ = (patrol_count_+1) % point_size_;
+        }
+      }
 
-      std::cout << "send goal" << std::endl;
-      chassis_executor_->Execute(patrol_goals_[patrol_count_]);
-      patrol_count_ = ++patrol_count_ % point_size_;
-      if (patrol_count_ == 0 && round_ == 0) {// just finished the first round
-        // now visit the loading zone
-        chassis_executor_->ExecuteReload(patrol_goals_[point_size_]);
-        round_ += 1; // add one to the round count to avoid visiting reload zone in all round except the first one
-      } 
+      
+      // if (patrol_count_ == 0 && round_==2) {// just finished the first round
+      //   // now visit the loading zone
+      //   chassis_executor_->ExecuteReload(patrol_goals_[point_size_]);
+      //   round_ = 0;
+      // } else if (patrol_count_ == 0)
+      // {
+      //   round_ += 1;// add one to the round count to avoid visiting reload zone in all round except once
+      // }
+      
     }
   }
 
@@ -84,7 +110,7 @@ class PatrolBehavior {
       patrol_goals_[i].pose.orientation.z = quaternion.z();
       patrol_goals_[i].pose.orientation.w = quaternion.w();
     }
-    point_size_ -= 1; // to discount the last point
+    //point_size_ -= 1; // to discount the last point
 
     return true;
   }
