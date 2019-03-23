@@ -77,15 +77,15 @@ point {
   yaw:   0
 }
 
-point {
-  x: 6.73
-  y: 0.82
-  z: 0
+# point {
+#   x: 6.73
+#   y: 0.82
+#   z: 0
 
-  roll:  0
-  pitch: 0
-  yaw:   3.14
-}
+#   roll:  0
+#   pitch: 0
+#   yaw:   3.14
+# }
 
 
 point {
@@ -106,6 +106,16 @@ point {
   roll:  0
   pitch: 0
   yaw:   0
+}
+# the last point is for reload
+point {
+  x: 4.15
+  y: 2.85
+  z: 0
+
+  roll:  0
+  pitch: 0
+  yaw:   -0.52
 }
 escape {
   left_x_limit: 2.5

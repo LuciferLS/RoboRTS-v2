@@ -39,6 +39,11 @@ class ChassisExecutor{
    */
   void Execute(const geometry_msgs::PoseStamped &goal);
   /**
+   * @brief Execute the goal-targeted task using global and local planner with actionlib
+   * @param goal Given taget goal
+   */
+  void ExecuteReload(const geometry_msgs::PoseStamped &goal);
+  /**
    * @brief Execute the velocity task with publisher
    * @param twist Given velocity
    */
@@ -64,6 +69,7 @@ class ChassisExecutor{
    * @param global_planner_feedback  Global planner actionlib feedback, which mainly consists of global planner path output
    */
   void GlobalPlannerFeedbackCallback(const roborts_msgs::GlobalPlannerFeedbackConstPtr& global_planner_feedback);
+  void GlobalPlannerActionDoneReloadCallback(const actionlib::SimpleClientGoalState &state, const roborts_msgs::GlobalPlannerResultConstPtr &result);
   //! execution mode of the executor
   ExcutionMode execution_mode_;
   //! execution state of the executor (same with behavior state)
@@ -88,6 +94,7 @@ class ChassisExecutor{
   //! zero twist with acceleration in form of ROS roborts_msgs::TwistAccel
   roborts_msgs::TwistAccel zero_twist_accel_;
 
+  bool can_move_ = true;
 
 };
 }

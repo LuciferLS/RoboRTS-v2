@@ -20,6 +20,7 @@ class PatrolBehavior {
 
     patrol_count_ = 0;
     point_size_ = 0;
+    round_ = 0;
 
     if (!LoadParam(proto_file_path)) {
       ROS_ERROR("%s can't open file", __FUNCTION__);
@@ -43,7 +44,11 @@ class PatrolBehavior {
       std::cout << "send goal" << std::endl;
       chassis_executor_->Execute(patrol_goals_[patrol_count_]);
       patrol_count_ = ++patrol_count_ % point_size_;
-
+      if (patrol_count_ == 0 && round_ == 0) {// just finished the first round
+        // now visit the loading zone
+        chassis_executor_->ExecuteReload(patrol_goals_[point_size_]);
+        round_ += 1; // add one to the round count to avoid visiting reload zone in all round except the first one
+      } 
     }
   }
 
@@ -60,8 +65,10 @@ class PatrolBehavior {
     if (!roborts_common::ReadProtoFromTextFile(proto_file_path, &decision_config)) {
       return false;
     }
-
+    // the last point will be treated as the loading zone pose, and it will be visited only once,
+    // after all other goals are visited once
     point_size_ = (unsigned int)(decision_config.point().size());
+    
     patrol_goals_.resize(point_size_);
     for (int i = 0; i != point_size_; i++) {
       patrol_goals_[i].header.frame_id = "map";
@@ -77,6 +84,7 @@ class PatrolBehavior {
       patrol_goals_[i].pose.orientation.z = quaternion.z();
       patrol_goals_[i].pose.orientation.w = quaternion.w();
     }
+    point_size_ -= 1; // to discount the last point
 
     return true;
   }
@@ -94,6 +102,7 @@ class PatrolBehavior {
   std::vector<geometry_msgs::PoseStamped> patrol_goals_;
   unsigned int patrol_count_;
   unsigned int point_size_;
+  unsigned int round_;
 
 };
 }

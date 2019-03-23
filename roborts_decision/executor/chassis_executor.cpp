@@ -3,7 +3,9 @@
 
 namespace roborts_decision{
 
-ChassisExecutor::ChassisExecutor():execution_mode_(ExcutionMode::IDLE_MODE), execution_state_(BehaviorState::IDLE),
+ChassisExecutor::ChassisExecutor():
+  can_move_(true),
+  execution_mode_(ExcutionMode::IDLE_MODE), execution_state_(BehaviorState::IDLE),
                                    global_planner_client_("global_planner_node_action", true),
                                    local_planner_client_("local_planner_node_action", true)
 {
@@ -21,6 +23,16 @@ void ChassisExecutor::Execute(const geometry_msgs::PoseStamped &goal){
   global_planner_goal_.goal = goal;
   global_planner_client_.sendGoal(global_planner_goal_,
                                   GlobalActionClient::SimpleDoneCallback(),
+                                  GlobalActionClient::SimpleActiveCallback(),
+                                  boost::bind(&ChassisExecutor::GlobalPlannerFeedbackCallback, this, _1));
+}
+
+void ChassisExecutor::ExecuteReload(const geometry_msgs::PoseStamped &goal)
+  {
+  execution_mode_ = ExcutionMode::GOAL_MODE;
+  global_planner_goal_.goal = goal;
+  global_planner_client_.sendGoal(global_planner_goal_,
+                                  boost::bind(&ChassisExecutor::GlobalPlannerActionDoneReloadCallback, this, _1, _2),
                                   GlobalActionClient::SimpleActiveCallback(),
                                   boost::bind(&ChassisExecutor::GlobalPlannerFeedbackCallback, this, _1));
 }
@@ -119,10 +131,18 @@ void ChassisExecutor::Cancel(){
 }
 
 void ChassisExecutor::GlobalPlannerFeedbackCallback(const roborts_msgs::GlobalPlannerFeedbackConstPtr& global_planner_feedback){
-  if (!global_planner_feedback->path.poses.empty()) {
+  if (!global_planner_feedback->path.poses.empty() && this->can_move_) {
     local_planner_goal_.route = global_planner_feedback->path;
     local_planner_client_.sendGoal(local_planner_goal_);
   }
 }
 
+void ChassisExecutor::GlobalPlannerActionDoneReloadCallback(const actionlib::SimpleClientGoalState &state,
+ const roborts_msgs::GlobalPlannerResultConstPtr &result) {
+  ROS_INFO("Finished in state [%s] and sleep for 5 seconds", state.toString().c_str());
+  this->can_move_ = false;
+  sleep(5000);
+  this->can_move_  = true;
 }
+
+} // namespace roborts_decision
