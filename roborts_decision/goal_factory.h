@@ -42,6 +42,9 @@ Goal_Factory(ros::NodeHandle nh){
     reload_behavior         = new roborts_decision::ReloadBehavior(chassis_executor, blackboard, full_path);
 }
 
+void run(){
+    
+}
 ~Goal_Factory();
 private:
 states current_state = states::STOP;
@@ -49,8 +52,14 @@ std::chrono::milliseconds execution_duration;
 roborts_decision::ChaseBehavior        *chase_behavior;
 roborts_decision::SearchBehavior       *search_behavior;
 roborts_decision::EscapeBehavior       *escape_behavior;
-roborts_decision::ShootBehavior        *shoot_behavior);
+roborts_decision::ShootBehavior        *shoot_behavior;
 roborts_decision::ReloadBehavior       *reload_behavior;
+int ammo = 50;
+int hp = 1000;
+bool under_attack = false;
+int under_attack_board = -1;
+bool enemy_detected = false;
+bool has_buff = false;
 }
 }
 #endif
