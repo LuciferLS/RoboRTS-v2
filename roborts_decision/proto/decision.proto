@@ -58,6 +58,8 @@ message DecisionConfig {
     repeated Point search_region_2 = 12;
     repeated Point search_region_3 = 13;
     repeated Point search_region_4 = 14;
+    optional Point reload_spot_red = 17;
+    optional Point reload_spot_blue = 18;
 //    optional Shaking shaking_info = 15;
 }
 

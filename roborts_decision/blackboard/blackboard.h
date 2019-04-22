@@ -29,6 +29,10 @@
 #include "../proto/decision.pb.h"
 #include "costmap/costmap_interface.h"
 
+#include <chrono>
+
+// todo: #include "roborts_msg"
+
 namespace roborts_decision{
 
 class Blackboard {
@@ -81,11 +85,83 @@ class Blackboard {
                                                  boost::bind(&Blackboard::ArmorDetectionFeedbackCallback, this, _1));
     }
 
-
+    //subscribers
+    damage_subscriber       = nh.subscribe("robot_damage", 1000, &blackboard::damage_callback, this);
+    buff_subscriber         = nh.subscribe("robot_bonus", 1000, &blackboard::buff_callback, this);
+    robot_status_subscriber = nh.subscribe("robot_status", 1000, &blackboard::robot_status_callback, this);
+    reload_subscriber       = nh.subscribe("field_supplier_status"), 1000, &blackboard::reload_callback, this);
+    ros_robot_bonus_pub_    = nh.subscribe("game_status", 1000, &blackboard::)
   }
 
   ~Blackboard() = default;
 
+  //callbacks
+  void damage_callback(const roborts_msgs::RobotDamage& msg){
+    damage = true;
+    damage_armor = msg.armor_id;
+    damage_timepoint = &std::chrono::steady_clock::now();
+  }
+
+  void buff_callback(const roborts_msgs::RobotBonus& msg){
+    buff = msg.bonus;
+  }
+
+  void robot_status_callback(const roborts_msgs::RobotStatus& msg){
+    hp = msg.remain_hp;
+  }
+
+  void reload_callback(const roborts_msgs::SupplierStatus& msg){
+    if(msg.status){
+      reload_status = 1;
+    }
+    else{
+      reload_status = 2;
+    }
+  }
+
+  void game_status_callback(const roborts_msgs::GameStatus& msg){
+    remain_time = msg.stage_remain_time;
+  }
+
+  //get
+  bool is_damaged(){
+    return damage;
+  }
+
+  int is_reloading(){
+    return reload_status;
+  }
+  bool get_damage_armor(){
+    return damage_armor;
+  }
+  std::chrono::steady_clock::time_point get_damage_timepoint(){
+    return *damage_timepoint;
+  }
+  bool is_buffed(){
+    return buff;
+  }
+  int get_hp(){
+    return hp;
+  }
+  int get_reload_status(){
+    return reload_status;
+  }
+  int get_remain_time(){
+    return remain_time;
+  }
+
+  //reset value
+  void un_damaged(){
+    damage = false;
+  }
+  void un_reload(){
+    reload_status = -1;
+  }
+  void reloading(){
+    if(reload_status == 1 || reload_status ==2)
+      return;
+    reload_status = 0;
+  }
 
   // Enemy
   void ArmorDetectionFeedbackCallback(const roborts_msgs::ArmorDetectionFeedbackConstPtr& feedback){
@@ -236,6 +312,19 @@ class Blackboard {
   //! robot map pose
   geometry_msgs::PoseStamped robot_map_pose_;
 
+  //robot info
+  bool damage = false;
+  int damage_armor = -1;
+  bool buff = false;
+  int reload_status = -1;//0=reloading 1=succeed 2=fail -1=not reloading
+  std::chrono::steady_clock::time_point *damage_timepoint;
+  int remain_time;
+  //subscribers
+  ros::Subscriber buff_subscriber;
+  ros::Subscriber damage_subscriber
+  ros::Subscriber robot_status_subscriber;
+  ros::Subscriber reload_subscriber;
+  ros::Subscriber game_status_subscriber;
 };
 } //namespace roborts_decision
 #endif //ROBORTS_DECISION_BLACKBOARD_H

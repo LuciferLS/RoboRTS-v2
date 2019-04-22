@@ -29,6 +29,7 @@ namespace roborts_decision {
                 ROS_ERROR("%s can't open file", __FUNCTION__);
             }
             cancel_goal_ = true;
+            ns = ros::this_node::getNamespace();
         }
 
         void Run(){
@@ -67,23 +68,29 @@ namespace roborts_decision {
                         if(pow(robot_map_pose.pose.position.x - reload_spot.pose.position.x, 2) +
                         pow(robot_map_pose.pose.position.y - reload_spot.pose.position.y, 2) <= 0.17){                          
                             roborts_sim::ReloadCmd srv;
-                            srv.request.robot = robot_id;
+                            srv.request.robot = 0;
+                            blackboard_->reloading();
                             if (reload_Client.call(srv)){
                                 if(srv.response.success){
                                     ROS_INFO("Reload succeed!");
                                     this->Cancel();
+                                    blackboard_->un_reload();
+                                    blackboard_->reload_complete();
                                     return;
                                 }
                                 else{
                                     ROS_INFO("Reload failed!");
                                     this->Cancel();
+                                    blackboard_->un_reload();
                                     return;
                                 }
                             }
-                            else
+                            else{
                                 ROS_WARN("Reload failed.");
                                 this->Cancel();
-                                    return;
+                                blackboard_->un_reload();
+                                return;
+                            }
                         }
                     }
                 }
@@ -97,15 +104,28 @@ namespace roborts_decision {
             }
   
             // Read Reloading Point Pose information
-            int i = (unsigned int) (decision_config.point().size()) - 1;
             reload_spot.header.frame_id = "map";
-            reload_spot.pose.position.x = decision_config.point(i).x();
-            reload_spot.pose.position.y = decision_config.point(i).y();
-            reload_spot.pose.position.z = decision_config.point(i).z();
 
-            tf::Quaternion quaternion = tf::createQuaternionFromRPY(decision_config.point(i).roll(),
-                                                                    decision_config.point(i).pitch(),
-                                                                    decision_config.point(i).yaw());
+            if(ns == "/r1" || ns == "/r2"){
+
+                reload_spot.pose.position.x = decision_config.reload_spot_red.x();
+                reload_spot.pose.position.y = decision_config.reload_spot_red.y();
+                reload_spot.pose.position.z = decision_config.reload_spot_red.z();
+
+                tf::Quaternion quaternion = tf::createQuaternionFromRPY(decision_config.reload_spot_red.roll(),
+                                                                        decision_config.reload_spot_red.pitch(),
+                                                                        decision_config.reload_spot_red.yaw());
+            }
+            if(ns == "/r3" || ns == "/r4"){
+
+                reload_spot.pose.position.x = decision_config.reload_spot_blue.x();
+                reload_spot.pose.position.y = decision_config.reload_spot_blue.y();
+                reload_spot.pose.position.z = decision_config.reload_spot_blue.z();
+
+                tf::Quaternion quaternion = tf::createQuaternionFromRPY(decision_config.reload_spot_blue.roll(),
+                                                                        decision_config.reload_spot_blue.pitch(),
+                                                                        decision_config.reload_spot_red.yaw());
+            }
             reload_spot.pose.orientation.x = quaternion.x();
             reload_spot.pose.orientation.y = quaternion.y();
             reload_spot.pose.orientation.z = quaternion.z();
@@ -127,6 +147,7 @@ namespace roborts_decision {
         void SetSpot(geometry_msgs::PoseStamped reload_spot) {
             reload_spot = reload_spot;
         }
+
         ~ReloadBehavior() = default;
 
         private:
@@ -144,7 +165,8 @@ namespace roborts_decision {
 
         ros::ServiceClient reload_Client;
 
-        uint robot_id = 1;
+        std::string ns;
+
     };
 }
 
