@@ -29,6 +29,12 @@
 #include "../proto/decision.pb.h"
 #include "costmap/costmap_interface.h"
 
+#include "roborts_msgs/RobotDamage.h"
+#include "roborts_msgs/RobotBonus.h"
+#include "roborts_msgs/RobotStatus.h"
+#include "roborts_msgs/SupplierStatus.h"
+#include "roborts_msgs/GameStatus.h"
+
 #include <chrono>
 
 // todo: #include "roborts_msg"
@@ -71,8 +77,7 @@ class Blackboard {
 
     roborts_decision::DecisionConfig decision_config;
     roborts_common::ReadProtoFromTextFile(proto_file_path, &decision_config);
-
-    if (!decision_config.simulate()){
+    /*if (!decision_config.simulate()){
 
       armor_detection_actionlib_client_.waitForServer();
 
@@ -83,14 +88,14 @@ class Blackboard {
                                                  actionlib::SimpleActionClient<roborts_msgs::ArmorDetectionAction>::SimpleDoneCallback(),
                                                  actionlib::SimpleActionClient<roborts_msgs::ArmorDetectionAction>::SimpleActiveCallback(),
                                                  boost::bind(&Blackboard::ArmorDetectionFeedbackCallback, this, _1));
-    }
-
+    }*/
+    ROS_INFO("0");
     //subscribers
-    damage_subscriber       = nh.subscribe("robot_damage", 1000, &blackboard::damage_callback, this);
-    buff_subscriber         = nh.subscribe("robot_bonus", 1000, &blackboard::buff_callback, this);
-    robot_status_subscriber = nh.subscribe("robot_status", 1000, &blackboard::robot_status_callback, this);
-    reload_subscriber       = nh.subscribe("field_supplier_status"), 1000, &blackboard::reload_callback, this);
-    ros_robot_bonus_pub_    = nh.subscribe("game_status", 1000, &blackboard::)
+    damage_subscriber       = nh.subscribe("robot_damage", 1000, &Blackboard::damage_callback, this);
+    buff_subscriber         = nh.subscribe("robot_bonus", 1000, &Blackboard::buff_callback, this);
+    robot_status_subscriber = nh.subscribe("robot_status", 1000, &Blackboard::robot_status_callback, this);
+    reload_subscriber       = nh.subscribe("field_supplier_status", 1000, &Blackboard::reload_callback, this);
+    game_status_subscriber  = nh.subscribe("game_status", 1000, &Blackboard::game_status_callback, this);
   }
 
   ~Blackboard() = default;
@@ -98,8 +103,8 @@ class Blackboard {
   //callbacks
   void damage_callback(const roborts_msgs::RobotDamage& msg){
     damage = true;
-    damage_armor = msg.armor_id;
-    damage_timepoint = &std::chrono::steady_clock::now();
+    damage_armor = msg.damage_source;
+    damage_timepoint = std::chrono::steady_clock::now();
   }
 
   void buff_callback(const roborts_msgs::RobotBonus& msg){
@@ -120,7 +125,7 @@ class Blackboard {
   }
 
   void game_status_callback(const roborts_msgs::GameStatus& msg){
-    remain_time = msg.stage_remain_time;
+    remain_time = msg.remaining_time;
   }
 
   //get
@@ -135,7 +140,7 @@ class Blackboard {
     return damage_armor;
   }
   std::chrono::steady_clock::time_point get_damage_timepoint(){
-    return *damage_timepoint;
+    return damage_timepoint;
   }
   bool is_buffed(){
     return buff;
@@ -313,15 +318,16 @@ class Blackboard {
   geometry_msgs::PoseStamped robot_map_pose_;
 
   //robot info
+  int hp = 2000;
   bool damage = false;
   int damage_armor = -1;
   bool buff = false;
   int reload_status = -1;//0=reloading 1=succeed 2=fail -1=not reloading
-  std::chrono::steady_clock::time_point *damage_timepoint;
+  std::chrono::steady_clock::time_point damage_timepoint;
   int remain_time;
   //subscribers
   ros::Subscriber buff_subscriber;
-  ros::Subscriber damage_subscriber
+  ros::Subscriber damage_subscriber;
   ros::Subscriber robot_status_subscriber;
   ros::Subscriber reload_subscriber;
   ros::Subscriber game_status_subscriber;

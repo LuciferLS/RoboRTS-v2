@@ -45,6 +45,7 @@ add_executable(behavior_test_node
   example_behavior/simple_decision_tree.h
   example_behavior/shoot_behavior.h
   example_behavior/reload_behavior.h
+  example_behavior/to_buff_zone_behavior.h
   behavior_test.cpp
   executor/chassis_executor.cpp
   )
@@ -56,4 +57,30 @@ target_link_libraries(behavior_test_node
   ${PROTOBUF_LIBRARIES}
   )
 add_dependencies(behavior_test_node
+  roborts_msgs_generate_messages)
+
+add_executable(goal_factory_node
+  ${DecisionProtoHds}
+  ${DecisionProtoSrc}
+  example_behavior/escape_behavior.h
+  example_behavior/back_boot_area_behavior.h
+  example_behavior/chase_behavior.h
+  example_behavior/patrol_behavior.h
+  example_behavior/search_behavior.h
+  example_behavior/simple_decision_tree.h
+  example_behavior/shoot_behavior.h
+  example_behavior/reload_behavior.h
+  example_behavior/to_buff_zone_behavior.h
+  goal_factory.h
+  goal_factory_node.cpp
+  executor/chassis_executor.cpp
+  )
+
+target_link_libraries(goal_factory_node
+  PRIVATE
+  roborts_costmap
+  ${catkin_LIBRARIES}
+  ${PROTOBUF_LIBRARIES}
+  )
+add_dependencies(goal_factory_node
   roborts_msgs_generate_messages)

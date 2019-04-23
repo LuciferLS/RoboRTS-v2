@@ -1,7 +1,6 @@
 #ifndef ROBORTS_DECISION_RELOAD_BEHAVIOR_H
 #define ROBORTS_DECISION_RELOAD_BEHAVIOR_H
 
-#include "io/io.h"
 #include <unistd.h>
 #include "math.h"
 
@@ -24,7 +23,8 @@ namespace roborts_decision {
                                                        blackboard_(blackboard) {
 
             ros::NodeHandle nh;
-            reload_Client = nh.serviceClient<roborts_sim::ReloadCmd>("reload");                      
+            reload_Client = nh.serviceClient<roborts_sim::ReloadCmd>("reload");  
+            ns = ros::this_node::getNamespace();                    
             if (!LoadParam(proto_file_path)) {
                 ROS_ERROR("%s can't open file", __FUNCTION__);
             }
@@ -75,7 +75,6 @@ namespace roborts_decision {
                                     ROS_INFO("Reload succeed!");
                                     this->Cancel();
                                     blackboard_->un_reload();
-                                    blackboard_->reload_complete();
                                     return;
                                 }
                                 else{
@@ -105,32 +104,30 @@ namespace roborts_decision {
   
             // Read Reloading Point Pose information
             reload_spot.header.frame_id = "map";
+            if(ns == "//r1" || ns == "//r2"){
 
-            if(ns == "/r1" || ns == "/r2"){
+                reload_spot.pose.position.x = decision_config.reload_spot_red().x();
+                reload_spot.pose.position.y = decision_config.reload_spot_red().y();
+                reload_spot.pose.position.z = decision_config.reload_spot_red().z();
 
-                reload_spot.pose.position.x = decision_config.reload_spot_red.x();
-                reload_spot.pose.position.y = decision_config.reload_spot_red.y();
-                reload_spot.pose.position.z = decision_config.reload_spot_red.z();
-
-                tf::Quaternion quaternion = tf::createQuaternionFromRPY(decision_config.reload_spot_red.roll(),
-                                                                        decision_config.reload_spot_red.pitch(),
-                                                                        decision_config.reload_spot_red.yaw());
+                auto quaternion = tf::createQuaternionMsgFromRollPitchYaw(decision_config.reload_spot_red().roll(),
+                                                                        decision_config.reload_spot_red().pitch(),
+                                                                        decision_config.reload_spot_red().yaw());
+                reload_spot.pose.orientation = quaternion;
             }
-            if(ns == "/r3" || ns == "/r4"){
+            else if(ns == "//r3" || ns == "//r4"){
 
-                reload_spot.pose.position.x = decision_config.reload_spot_blue.x();
-                reload_spot.pose.position.y = decision_config.reload_spot_blue.y();
-                reload_spot.pose.position.z = decision_config.reload_spot_blue.z();
+                reload_spot.pose.position.x = decision_config.reload_spot_blue().x();
+                reload_spot.pose.position.y = decision_config.reload_spot_blue().y();
+                reload_spot.pose.position.z = decision_config.reload_spot_blue().z();
 
-                tf::Quaternion quaternion = tf::createQuaternionFromRPY(decision_config.reload_spot_blue.roll(),
-                                                                        decision_config.reload_spot_blue.pitch(),
-                                                                        decision_config.reload_spot_red.yaw());
+                auto quaternion = tf::createQuaternionMsgFromRollPitchYaw(decision_config.reload_spot_blue().roll(),
+                                                                        decision_config.reload_spot_blue().pitch(),
+                                                                        decision_config.reload_spot_blue().yaw());
+                reload_spot.pose.orientation = quaternion;
+            }else {
+                ROS_WARN("Error happens when checking self Robot ID, %s", __FUNCTION__);
             }
-            reload_spot.pose.orientation.x = quaternion.x();
-            reload_spot.pose.orientation.y = quaternion.y();
-            reload_spot.pose.orientation.z = quaternion.z();
-            reload_spot.pose.orientation.w = quaternion.w();
-
             return true;
         }
 
