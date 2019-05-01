@@ -39,6 +39,7 @@ message MultiRobot {
 message Shaking {
   optional float rotation_z_speed = 1;
   optional float delta_time = 2;
+  optional float aim_time = 3;
 }
 
 message DecisionConfig {

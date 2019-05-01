@@ -32,10 +32,33 @@ class AttackBehavior {
       }
 
   void Run() {
-    ROS_WARN("Shaking z is %.5f", shaking_.twist.angular.z);
-    chassis_executor_->Execute(shaking_);
-    ros::Duration(shaking_time_).sleep();
-    shaking_.twist.angular.z = shaking_.twist.angular.z * (-1);
+    // ROS_WARN("Shaking z is %.5f", shaking_.twist.angular.z);
+    // ROS_INFO("enemy pos %f",blackboard_->GetEnemy().pose.position.x);
+    ROS_INFO("YAW z is %.5f", blackboard_->GetEnemyYaw());
+    shaking_.twist.angular.z=0;
+
+
+    if (blackboard_->GetEnemyYaw()!=0)
+    {
+      shaking_.accel.angular.z = blackboard_->GetEnemyYaw()/aim_time_/aim_time_;
+      ROS_WARN("Shaking z is %.5f", shaking_.accel.angular.z);
+      chassis_executor_->Execute(shaking_);
+      ros::Duration(aim_time_).sleep();
+      shaking_.accel.angular.z = shaking_.accel.angular.z *-1;
+      chassis_executor_->Execute(shaking_);
+      ros::Duration(aim_time_).sleep();
+      chassis_executor_->Cancel();
+
+      
+    }
+
+
+    
+
+    // shaking
+    // chassis_executor_->Execute(shaking_);
+    // ros::Duration(shaking_time_).sleep();
+    // shaking_.twist.angular.z = shaking_.twist.angular.z * (-1);
   }
 
   void Cancel() {
@@ -67,6 +90,7 @@ class AttackBehavior {
     shaking_.accel.angular.z = 0;
 
     shaking_time_ = decision_config.shaking_info().delta_time();
+    aim_time_ = decision_config.shaking_info().aim_time();
 
     return true;
   }
@@ -84,6 +108,7 @@ class AttackBehavior {
   //geometry_msgs::PoseStamped planning_goal_;
   roborts_msgs::TwistAccel shaking_;
   float shaking_time_;
+  float aim_time_;
 
 };
 }

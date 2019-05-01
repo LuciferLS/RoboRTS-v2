@@ -91,7 +91,7 @@ class Blackboard {
   void ArmorDetectionFeedbackCallback(const roborts_msgs::ArmorDetectionFeedbackConstPtr& feedback){
     if (feedback->detected){
       enemy_detected_ = true;
-      ROS_INFO("Find Enemy!");
+      //ROS_INFO("Find Enemy!");
 
       tf::Stamped<tf::Pose> tf_pose, global_tf_pose;
       geometry_msgs::PoseStamped camera_pose_msg, global_pose_msg;
@@ -100,7 +100,17 @@ class Blackboard {
       double distance = std::sqrt(camera_pose_msg.pose.position.x * camera_pose_msg.pose.position.x +
           camera_pose_msg.pose.position.y * camera_pose_msg.pose.position.y);
       double yaw = atan(camera_pose_msg.pose.position.y / camera_pose_msg.pose.position.x);
-      ROS_INFO("Before Enemy x: %.5f, Enemy y: %.5f, Enemy z: %.5f.", camera_pose_msg.pose.position.x, camera_pose_msg.pose.position.y, camera_pose_msg.pose.position.z);
+      if (camera_pose_msg.pose.position.z == 0 || (camera_pose_msg.pose.position.y<0.06&&camera_pose_msg.pose.position.y>-0.06))
+      {
+        enemy_yaw_=0;
+      }
+      else
+      {
+        enemy_yaw_=yaw;
+      }
+      
+      
+      //ROS_INFO("Before Enemy x: %.5f, Enemy y: %.5f, Enemy z: %.5f.", camera_pose_msg.pose.position.x, camera_pose_msg.pose.position.y, camera_pose_msg.pose.position.z);
       //camera_pose_msg.pose.position.z=camera_pose_msg.pose.position.z;
       tf::Quaternion quaternion = tf::createQuaternionFromRPY(0,
                                                               0,
@@ -117,7 +127,7 @@ class Blackboard {
         tf_ptr_->transformPose("map", tf_pose, global_tf_pose);
         tf::poseStampedTFToMsg(global_tf_pose, global_pose_msg);
 
-        ROS_WARN("Enemy x: %.5f, Enemy y: %.5f, Enemy z: %.5f.", global_pose_msg.pose.position.x, global_pose_msg.pose.position.y, global_pose_msg.pose.position.z);
+        //ROS_WARN("Enemy x: %.5f, Enemy y: %.5f, Enemy z: %.5f.", global_pose_msg.pose.position.x, global_pose_msg.pose.position.y, global_pose_msg.pose.position.z);
 
         if(GetDistance(global_pose_msg, enemy_pose_)>0.2 || GetAngle(global_pose_msg, enemy_pose_) > 0.2){
           enemy_pose_ = global_pose_msg;
@@ -129,6 +139,7 @@ class Blackboard {
       }
     } else{
       enemy_detected_ = false;
+      enemy_yaw_ = 0;
     }
 
   }
@@ -198,6 +209,11 @@ class Blackboard {
     return charmap_;
   }
 
+  double GetEnemyYaw()
+  {
+    return enemy_yaw_;
+  }
+
  private:
   void UpdateRobotPose() {
     tf::Stamped<tf::Pose> robot_tf_pose;
@@ -228,6 +244,7 @@ class Blackboard {
   actionlib::SimpleActionClient<roborts_msgs::ArmorDetectionAction> armor_detection_actionlib_client_;
   roborts_msgs::ArmorDetectionGoal armor_detection_goal_;
   geometry_msgs::PoseStamped enemy_pose_;
+  double enemy_yaw_;
   bool enemy_detected_;
 
   //! cost map
